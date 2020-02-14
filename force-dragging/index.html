@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body width="100%">
+    <div>
+        <canvas width="1000px" height="500px"></canvas>
+    </div>
+    <input type="text" id="label" />
+    <input type="button" value="Add" onclick="add()" />
+    <span id="selectedNode"></span>
+</body>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+
+var canvas = document.querySelector("canvas"),
+    context = canvas.getContext("2d"),
+    width = canvas.width,
+    height = canvas.height;
+
+var simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(d => d.id).distance(100).strength(4))
+    //.force("link", d3.forceLink().links())
+    .force("charge", d3.forceManyBody().strength(-100))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+var data = {
+    "nodes": [
+      {"id": "Hansi", "group": 1},
+      {"id": "Burli", "group": 1},
+      {"id": "Franzl", "group": 1},
+      {"id": "Quaksi", "group": 1},
+      {"id": "Mitzi", "group": 1},
+    ],
+    "links": [
+      {"source": "Hansi", "target": "Burli", "value": 1, "distance": 60},
+      {"source": "Hansi", "target": "Franzl", "value": 1, "distance": 60},
+      {"source": "Hansi", "target": "Quaksi", "value": 10, "distance": 60},
+      {"source": "Quaksi", "target": "Mitzi", "value": 1, "distance": 60},
+    ]
+  };
+
+var selected = '';
+
+simulation
+    .nodes(data.nodes)
+    .on("tick", ticked);
+
+simulation.force("link")
+    .links(data.links);
+
+console.log(data.nodes);
+console.log(data.links);
+
+d3.select(canvas)
+    .call(d3.drag()
+        .container(canvas)
+        .subject(dragsubject)
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+function ticked() {
+    context.clearRect(0, 0, width, height);
+
+    context.beginPath();
+    data.links.forEach(drawLink);
+    context.strokeStyle = "#D99414";
+    context.stroke();
+
+    context.beginPath();
+    data.nodes.forEach(drawNode);
+    context.fill();
+    context.strokeStyle = "#D99414";
+    context.stroke();
+}
+
+function dragsubject() {
+    return simulation.find(d3.event.x, d3.event.y, 10);
+}
+
+
+function add() {
+    if (selected !== "") {
+        var newNode = {
+            "id": document.getElementById('label').value, 
+            "group": 1,
+            x: width/2, 
+            y: height/2,
+            vx: 0, 
+            vy: 0
+        };
+        data.nodes.push(newNode)
+
+        var newLink = {
+            source: data.nodes.find(n => n.id === selected),
+            target: newNode,
+            index: data.links.length,
+            value: 1
+        };
+        data.links.push(newLink);
+
+        
+        simulation.force("link").links(data.links);
+        simulation.restart();
+        
+        console.log('added node ' + newNode.id);
+        console.log(newNode);
+        console.log(data.nodes);
+        console.log(data.links);
+    } else {
+        console.log("couldn't add new node, select a node")
+    }
+}
+
+function dragstarted() {
+  console.log(d3.event.sourceEvent)
+
+  // move node
+  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  d3.event.subject.fx = d3.event.subject.x;
+  d3.event.subject.fy = d3.event.subject.y; 
+
+  setSelected(d3.event.subject.id);
+ 
+  console.log(selected);
+}
+
+function dragged() {
+  d3.event.subject.fx = d3.event.x;
+  d3.event.subject.fy = d3.event.y;
+}
+
+function dragended() {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d3.event.subject.fx = null;
+  d3.event.subject.fy = null;
+}
+
+function drawLink(d) {
+  context.moveTo(d.source.x, d.source.y);
+  context.lineTo(d.target.x, d.target.y);
+}
+
+function drawNode(d) {
+  context.moveTo(d.x + 3, d.y);
+
+  // circle
+  context.fillStyle = "#F25C69";
+  context.arc(d.x, d.y, 12, 0, 2 * Math.PI);
+  
+  // text
+  context.font = "12px Arial";
+  context.fillStyle = "#BF3939";
+  context.fillText(d.id, d.x + 15, d.y + 5);
+}
+
+function setSelected(id) {
+  selected = id;
+  document.getElementById('selectedNode').innerHTML = "Selected node: " + selected;
+}
+
+</script>
