@@ -42,6 +42,11 @@
   var nodes = [...baseNodes];
   var links = [...baseLinks];
 
+  const NODECOLOR = "#BEFF82";
+  const NODESELECTEDCOLOR = "#39EB97";
+  const LINKCOLOR = "#FFCA6F";
+  const NODELABELFONTFAMILY = "Arial";
+
   function getNeighbors(node) {
     return baseLinks.reduce(
       function(neighbors, link) {
@@ -61,15 +66,16 @@
   }
 
   function getNodeColor(node, neighbors) {
-    if (Array.isArray(neighbors) && neighbors.indexOf(node.id) > -1) {
+    return node.id === selectedId ? NODESELECTEDCOLOR : NODECOLOR;
+    /*if (Array.isArray(neighbors) && neighbors.indexOf(node.id) > -1) {
       return node.level === 1 ? "blue" : "green";
     }
 
-    return node.level === 1 ? "red" : "gray";
+    return node.level === 1 ? "red" : "gray";*/
   }
 
   function getLinkColor(node, link) {
-    return isNeighborLink(node, link) ? "green" : "#E5E5E5";
+    return isNeighborLink(node, link) ? "green" : LINKCOLOR;
   }
 
   function getTextColor(node, neighbors) {
@@ -102,13 +108,13 @@
       return link.id;
     })
     .strength(function(link) {
-      return link.strength;
+      return 0.1; //link.strength;
     });
 
   var simulation = d3
     .forceSimulation()
     .force("link", linkForce)
-    .force("charge", d3.forceManyBody().strength(-120))
+    .force("charge", d3.forceManyBody().strength(-20)) // d3.forceManyBody().strength(0) -120
     .force("center", d3.forceCenter(width / 2, height / 2));
 
   var dragDrop = d3
@@ -134,7 +140,16 @@
   // we either update the data according to the selection
   // or reset the data if the same node is clicked twice
   function selectNode(selectedNode) {
-    if (selectedId === selectedNode.id) {
+    selectedId = selectedNode.id;
+    console.log(selectedId);
+    
+    updateGraph();
+    
+    nodeElements.attr("fill", function(node) {
+      return getNodeColor(node, null);
+    });
+
+    /*if (selectedId === selectedNode.id) {
       selectedId = undefined;
       resetData();
       updateSimulation();
@@ -155,7 +170,7 @@
     });
     linkElements.attr("stroke", function(link) {
       return getLinkColor(selectedNode, link);
-    });
+    });*/
   }
 
   // this helper simple adds all nodes and links
@@ -232,12 +247,14 @@
       .append("circle")
       .attr("r", 10)
       .attr("fill", function(node) {
-        return node.level === 1 ? "red" : "gray";
+        var color = node.id === selectedId ? NODESELECTEDCOLOR : NODECOLOR;
+        return color;
       })
       .call(dragDrop)
       // we link the selectNode method here
       // to update the graph on every click
-      .on("click", selectNode);
+      .on("click", selectNode)
+      .on("dblclick", n => console.log("doubleclick"));
 
     nodeElements = nodeEnter.merge(nodeElements);
 
@@ -255,6 +272,7 @@
         return node.label;
       })
       .attr("font-size", 15)
+      .attr('font-family', NODELABELFONTFAMILY)
       .attr("dx", 15)
       .attr("dy", 4);
 
@@ -301,6 +319,7 @@
   function add() {
     var newNode = {
       id: document.getElementById("label").value,
+      label: document.getElementById("label").value,
       group: 1,
       level: 2,
       x: width / 2,
@@ -314,7 +333,7 @@
     console.log(nodes)
 
     var newLink = {
-      source: nodes.find(n => n.id === "cat"),
+      source: nodes.find(n => n.id === selectedId),
       target: newNode,
       strength: 0.7,
       index: links.length
