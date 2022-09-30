@@ -19,6 +19,6 @@
   "homepage": "https://github.com/apetkov/open-knowledge-graph#readme",
   "dependencies": {
     "bootstrap": "^4.4.1",
-    "d3": "^5.15.0"
+    "d3": "^7.6.1"
   }
 }
